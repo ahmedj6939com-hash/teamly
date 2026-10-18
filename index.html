@@ -1,0 +1,911 @@
+<title>Teamly</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap">
+
+<style>
+/* ── Design tokens ── */
+:root {
+  --accent:       #4F6EF7;
+  --accent-2:     #7C3AED;
+  --accent-soft:  #EEF2FF;
+  --bg:           #F1F4F9;
+  --surface:      #FFFFFF;
+  --surface-2:    #F8FAFC;
+  --border:       #E2E8F0;
+  --fg:           #0F172A;
+  --fg-2:         #475569;
+  --fg-3:         #94A3B8;
+  --green:        #10B981;
+  --amber:        #F59E0B;
+  --red:          #EF4444;
+  --blue:         #3B82F6;
+  --sidebar-w:    240px;
+  --radius:       12px;
+  --radius-sm:    8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:          #0B0F1A;
+    --surface:     #131929;
+    --surface-2:   #1A2235;
+    --border:      #1E2D45;
+    --fg:          #F0F4FF;
+    --fg-2:        #8BA3C7;
+    --fg-3:        #3D5475;
+    --accent-soft: #1A2550;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:          #0B0F1A;
+  --surface:     #131929;
+  --surface-2:   #1A2235;
+  --border:      #1E2D45;
+  --fg:          #F0F4FF;
+  --fg-2:        #8BA3C7;
+  --fg-3:        #3D5475;
+  --accent-soft: #1A2550;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+
+/* ── Login ── */
+#login-screen {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(32px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(135deg, #0B0F1A 0%, #1a2550 60%, #0F1C42 100%);
+}
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 48px 40px;
+  backdrop-filter: blur(24px);
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+.login-logo-mark {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+.login-logo-mark svg { width: 22px; height: 22px; }
+.login-logo-name { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: #fff; }
+.login-card h1 { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.login-card p { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 32px; }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+.field input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s;
+}
+.field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: rgba(255,255,255,0.25); }
+.login-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.login-row label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.5); cursor: pointer; }
+.login-row input[type=checkbox] { accent-color: var(--accent); }
+.login-row a { font-size: 13px; color: var(--accent); text-decoration: none; }
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+.login-hint { margin-top: 20px; text-align: center; font-size: 13px; color: rgba(255,255,255,0.3); }
+.login-hint span { color: rgba(255,255,255,0.5); }
+
+/* ── App Shell ── */
+#app { display: none; height: 100%; flex-direction: row; }
+#app.visible { display: flex; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: max(0px, env(safe-area-inset-top, 0px)) 0 max(0px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+}
+.sidebar-header {
+  padding: 24px 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 18px; height: 18px; }
+.logo-name { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; }
+.sidebar-section { padding: 20px 12px 8px; }
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--fg-3);
+  padding: 0 8px;
+  margin-bottom: 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-2);
+  transition: background .15s, color .15s;
+  user-select: none;
+}
+.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .7; }
+.nav-item:hover { background: var(--bg); color: var(--fg); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.nav-item.active svg { opacity: 1; }
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .15s;
+}
+.user-chip:hover { background: var(--bg); }
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'Sora', sans-serif;
+}
+.user-chip-info { min-width: 0; flex: 1; }
+.user-chip-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-chip-role { font-size: 11px; color: var(--fg-3); }
+
+/* Main content */
+.main { flex: 1; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.view { display: none; flex: 1; }
+.view.active { display: block; }
+
+/* Page header */
+.page-header {
+  padding: 28px max(24px, env(safe-area-inset-right, 0px)) 0 max(24px, env(safe-area-inset-left, 0px));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-header-title h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.page-header-title p { font-size: 13px; color: var(--fg-2); margin-top: 3px; }
+.page-content {
+  padding: 24px max(24px, env(safe-area-inset-right, 0px)) 32px max(24px, env(safe-area-inset-left, 0px));
+}
+
+/* Stat cards */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+.stat-icon svg { width: 20px; height: 20px; }
+.stat-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; color: var(--fg-2); margin-top: 4px; }
+.stat-delta { font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.delta-up { color: var(--green); }
+.delta-dn { color: var(--red); }
+
+/* Section headers */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; }
+.btn-sm {
+  padding: 7px 14px;
+  background: var(--accent-soft);
+  border: none;
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s;
+}
+.btn-sm:hover { opacity: .8; }
+
+/* Activity feed */
+.activity-list { display: flex; flex-direction: column; gap: 0; }
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  transition: background .12s;
+}
+.activity-item:hover { background: var(--bg); }
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.activity-body { flex: 1; min-width: 0; }
+.activity-text { font-size: 13px; line-height: 1.5; }
+.activity-text strong { font-weight: 600; }
+.activity-time { font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+
+/* Two-col layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* Chart bar */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { font-size: 12px; color: var(--fg-2); width: 60px; flex-shrink: 0; }
+.bar-track { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+.bar-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; width: 24px; text-align: right; }
+
+/* ── Employee List ── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13px; }
+thead th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg); }
+.emp-cell { display: flex; align-items: center; gap: 10px; }
+.emp-name { font-weight: 500; }
+.emp-email { font-size: 11px; color: var(--fg-3); }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-green { background: #DCFCE7; color: #166534; }
+.badge-amber { background: #FEF3C7; color: #92400E; }
+.badge-red   { background: #FEE2E2; color: #991B1B; }
+.badge-blue  { background: #DBEAFE; color: #1E40AF; }
+.badge-purple { background: #EDE9FE; color: #5B21B6; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge-green  { background: #14532d55; color: #4ade80; }
+  :root:not([data-theme="light"]) .badge-amber  { background: #78350f55; color: #fbbf24; }
+  :root:not([data-theme="light"]) .badge-red    { background: #7f1d1d55; color: #f87171; }
+  :root:not([data-theme="light"]) .badge-blue   { background: #1e3a5f55; color: #60a5fa; }
+  :root:not([data-theme="light"]) .badge-purple { background: #3b076455; color: #a78bfa; }
+}
+:root[data-theme="dark"] .badge-green  { background: #14532d55; color: #4ade80; }
+:root[data-theme="dark"] .badge-amber  { background: #78350f55; color: #fbbf24; }
+:root[data-theme="dark"] .badge-red    { background: #7f1d1d55; color: #f87171; }
+:root[data-theme="dark"] .badge-blue   { background: #1e3a5f55; color: #60a5fa; }
+:root[data-theme="dark"] .badge-purple { background: #3b076455; color: #a78bfa; }
+
+/* ── Profile Cards ── */
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform .2s, box-shadow .2s;
+  cursor: pointer;
+}
+.profile-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+.profile-avatar { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: #fff; font-family: 'Sora', sans-serif; margin-bottom: 12px; }
+.profile-name { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.profile-role { font-size: 12px; color: var(--fg-2); margin-bottom: 12px; }
+.profile-stats { display: flex; gap: 16px; width: 100%; justify-content: center; margin-bottom: 16px; }
+.profile-stat { text-align: center; }
+.profile-stat-val { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.profile-stat-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: .05em; }
+.profile-divider { height: 1px; background: var(--border); width: 100%; margin-bottom: 16px; }
+.profile-skills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.skill-tag {
+  padding: 4px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 11px;
+  color: var(--fg-2);
+}
+
+/* ── Task Board ── */
+.kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 680px) { .kanban { grid-template-columns: 1fr; } }
+.kanban-col {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-height: 200px;
+}
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.col-title-row { display: flex; align-items: center; gap: 8px; }
+.col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.col-title { font-size: 13px; font-weight: 600; }
+.col-count {
+  background: var(--border);
+  color: var(--fg-2);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: grab;
+  transition: box-shadow .15s, transform .15s;
+}
+.task-card:last-child { margin-bottom: 0; }
+.task-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.07); transform: translateY(-1px); }
+.task-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.priority-high { color: var(--red); }
+.priority-med  { color: var(--amber); }
+.priority-low  { color: var(--green); }
+.task-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
+.task-desc { font-size: 12px; color: var(--fg-2); line-height: 1.4; margin-bottom: 12px; }
+.task-footer { display: flex; align-items: center; justify-content: space-between; }
+.task-assignee { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-2); }
+.task-mini-avatar { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 8px; font-weight: 700; color: #fff; }
+.task-due { font-size: 11px; color: var(--fg-3); }
+.task-due.overdue { color: var(--red); }
+
+/* ── Leave Requests ── */
+.leave-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filter-tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; }
+.filter-tab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--fg-2);
+  transition: background .15s, color .15s;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+.filter-tab.active { background: var(--accent); color: #fff; }
+.days-bar { display: flex; gap: 2px; }
+.day-dot { width: 6px; height: 6px; border-radius: 2px; background: var(--accent); opacity: .3; }
+.day-dot.filled { opacity: 1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Responsive sidebar */
+@media (max-width: 640px) {
+  :root { --sidebar-w: 56px; }
+  .logo-name, .nav-item span, .sidebar-section-label, .user-chip-info { display: none; }
+  .nav-item { justify-content: center; padding: 10px; }
+  .user-chip { justify-content: center; }
+  .sidebar-header { padding: 16px 10px; justify-content: center; }
+}
+
+/* Theme toggle */
+.theme-toggle {
+  margin: 8px 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--fg-3);
+  cursor: pointer;
+}
+.toggle-switch {
+  width: 32px;
+  height: 18px;
+  background: var(--border);
+  border-radius: 9px;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--accent); }
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle-switch.on .toggle-knob { left: 16px; }
+</style>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+      </div>
+      <span class="login-logo-name">Teamly</span>
+    </div>
+    <h1>Welcome back</h1>
+    <p>Sign in to your workspace</p>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="login-email" placeholder="you@company.com" value="admin@teamly.io">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" value="password">
+    </div>
+    <div class="login-row">
+      <label><input type="checkbox" checked> Remember me</label>
+      <a href="#">Forgot password?</a>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Sign in to Teamly</button>
+    <p class="login-hint">Demo credentials pre-filled — <span>just click Sign in</span></p>
+  </div>
+</div>
+
+<!-- ── APP SHELL ── -->
+<div id="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+      </div>
+      <span class="logo-name">Teamly</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-view="employees">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Employees</span>
+      </div>
+      <div class="nav-item" data-view="profiles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Team Profiles</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Work</div>
+      <div class="nav-item" data-view="tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>Task Board</span>
+      </div>
+      <div class="nav-item" data-view="leaves">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Leave Requests</span>
+      </div>
+    </div>
+
+    <div class="theme-toggle" onclick="toggleTheme()" id="theme-row">
+      <span id="theme-label">Dark mode</span>
+      <div class="toggle-switch" id="theme-sw"><div class="toggle-knob"></div></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" onclick="navigate('dashboard')">
+        <div class="avatar" style="background:linear-gradient(135deg,#4F6EF7,#7C3AED)">AK</div>
+        <div class="user-chip-info">
+          <div class="user-chip-name">Alex Kim</div>
+          <div class="user-chip-role">Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Dashboard</h2>
+          <p>Monday, October 18, 2026 · Welcome back, Alex</p>
+        </div>
+        <button class="btn-sm" onclick="navigate('employees')">+ Add Employee</button>
+      </div>
+      <div class="page-content">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#EEF2FF"><svg viewBox="0 0 24 24" fill="none" stroke="#4F6EF7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div class="stat-value">24</div>
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-delta delta-up">↑ 2 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#F0FDF4"><svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+            <div class="stat-value">18</div>
+            <div class="stat-label">Active Today</div>
+            <div class="stat-delta delta-up">↑ 75% attendance</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FFFBEB"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <div class="stat-value">31</div>
+            <div class="stat-label">Open Tasks</div>
+            <div class="stat-delta delta-dn">↓ 8 completed today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FEF2F2"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="stat-value">5</div>
+            <div class="stat-label">Pending Leaves</div>
+            <div class="stat-delta delta-up">2 need review</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="section-header"><span class="section-title">Headcount by Department</span></div>
+            <div class="bar-chart">
+              <div class="bar-row"><span class="bar-label">Engineering</span><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--accent)"></div></div><span class="bar-val">9</span></div>
+              <div class="bar-row"><span class="bar-label">Product</span><div class="bar-track"><div class="bar-fill" style="width:42%;background:#7C3AED"></div></div><span class="bar-val">5</span></div>
+              <div class="bar-row"><span class="bar-label">Design</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#10B981"></div></div><span class="bar-val">3</span></div>
+              <div class="bar-row"><span class="bar-label">Marketing</span><div class="bar-track"><div class="bar-fill" style="width:33%;background:#F59E0B"></div></div><span class="bar-val">4</span></div>
+              <div class="bar-row"><span class="bar-label">Ops</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#EF4444"></div></div><span class="bar-val">3</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-header"><span class="section-title">Recent Activity</span></div>
+            <div class="activity-list">
+              <div class="activity-item"><div class="activity-dot" style="background:#10B981"></div><div class="activity-body"><div class="activity-text"><strong>Sara Chen</strong> completed task "API rate limiting"</div><div class="activity-time">12 minutes ago</div></div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:#F59E0B"></div><div class="activity-body"><div class="activity-text"><strong>Marcus Lee</strong> submitted a leave request for Oct 22–24</div><div class="activity-time">1 hour ago</div></div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:#4F6EF7"></div><div class="activity-body"><div class="activity-text"><strong>Priya Nair</strong> moved "Dashboard redesign" to In Progress</div><div class="activity-time">2 hours ago</div></div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:#7C3AED"></div><div class="activity-body"><div class="activity-text"><strong>James Wu</strong> joined the Engineering team</div><div class="activity-time">Yesterday, 4:30 PM</div></div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:#EF4444"></div><div class="activity-body"><div class="activity-text">Leave request from <strong>Ola Martins</strong> approved</div><div class="activity-time">Yesterday, 2:00 PM</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYEES -->
+    <div class="view" id="view-employees">
+      <div class="page-header">
+        <div class="page-header-title"><h2>Employees</h2><p>24 team members across 5 departments</p></div>
+        <button class="btn-sm">+ Add Member</button>
+      </div>
+      <div class="page-content">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Department</th><th>Role</th><th>Status</th><th>Joined</th><th>Tasks</th></tr></thead>
+            <tbody id="emp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILES -->
+    <div class="view" id="view-profiles">
+      <div class="page-header">
+        <div class="page-header-title"><h2>Team Profiles</h2><p>Click a card to view member details</p></div>
+      </div>
+      <div class="page-content">
+        <div class="profile-grid" id="profile-grid"></div>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="view" id="view-tasks">
+      <div class="page-header">
+        <div class="page-header-title"><h2>Task Board</h2><p>Sprint 14 · Oct 14 – Oct 28, 2026</p></div>
+        <button class="btn-sm">+ New Task</button>
+      </div>
+      <div class="page-content">
+        <div class="kanban">
+          <div class="kanban-col" id="col-todo">
+            <div class="kanban-col-header"><div class="col-title-row"><div class="col-dot" style="background:#94A3B8"></div><span class="col-title">To Do</span></div><span class="col-count" id="cnt-todo">0</span></div>
+            <div id="tasks-todo"></div>
+          </div>
+          <div class="kanban-col" id="col-inprogress">
+            <div class="kanban-col-header"><div class="col-title-row"><div class="col-dot" style="background:#4F6EF7"></div><span class="col-title">In Progress</span></div><span class="col-count" id="cnt-inprogress">0</span></div>
+            <div id="tasks-inprogress"></div>
+          </div>
+          <div class="kanban-col" id="col-done">
+            <div class="kanban-col-header"><div class="col-title-row"><div class="col-dot" style="background:#10B981"></div><span class="col-title">Done</span></div><span class="col-count" id="cnt-done">0</span></div>
+            <div id="tasks-done"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEAVE REQUESTS -->
+    <div class="view" id="view-leaves">
+      <div class="page-header">
+        <div class="page-header-title"><h2>Leave Requests</h2><p>Manage and approve time-off requests</p></div>
+        <div class="leave-header">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterLeave('all',this)">All</button>
+            <button class="filter-tab" onclick="filterLeave('pending',this)">Pending</button>
+            <button class="filter-tab" onclick="filterLeave('approved',this)">Approved</button>
+            <button class="filter-tab" onclick="filterLeave('rejected',this)">Rejected</button>
+          </div>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="leave-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const COLORS = ['#4F6EF7','#7C3AED','#10B981','#F59E0B','#EF4444','#3B82F6','#EC4899','#14B8A6'];
+const employees = [
+  {id:1,name:'Sara Chen',   email:'sara@teamly.io',   dept:'Engineering',role:'Senior Engineer',   status:'Active',  joined:'Jan 2022',tasks:7, skills:['React','TypeScript','Node.js'], avatar:'SC',color:0},
+  {id:2,name:'Marcus Lee',  email:'marcus@teamly.io', dept:'Product',    role:'Product Manager',   status:'Active',  joined:'Mar 2021',tasks:12,skills:['Roadmapping','SQL','Figma'],    avatar:'ML',color:1},
+  {id:3,name:'Priya Nair',  email:'priya@teamly.io',  dept:'Design',     role:'UI/UX Designer',    status:'Active',  joined:'Jun 2022',tasks:5, skills:['Figma','Prototyping','CSS'],    avatar:'PN',color:2},
+  {id:4,name:'James Wu',    email:'james@teamly.io',  dept:'Engineering',role:'Frontend Engineer', status:'Active',  joined:'Oct 2026',tasks:3, skills:['Vue.js','Python','Docker'],     avatar:'JW',color:3},
+  {id:5,name:'Ola Martins', email:'ola@teamly.io',    dept:'Marketing',  role:'Growth Lead',       status:'On Leave',joined:'Sep 2020',tasks:4, skills:['SEO','Analytics','HubSpot'],   avatar:'OM',color:4},
+  {id:6,name:'Keiko Tanaka',email:'keiko@teamly.io',  dept:'Engineering',role:'Backend Engineer',  status:'Active',  joined:'Nov 2021',tasks:8, skills:['Go','PostgreSQL','K8s'],       avatar:'KT',color:5},
+  {id:7,name:'David Osei',  email:'david@teamly.io',  dept:'Ops',        role:'IT Operations',     status:'Active',  joined:'Feb 2023',tasks:6, skills:['AWS','Linux','Monitoring'],    avatar:'DO',color:6},
+  {id:8,name:'Nina Petrov', email:'nina@teamly.io',   dept:'Product',    role:'Product Analyst',   status:'Active',  joined:'Apr 2022',tasks:9, skills:['SQL','Looker','Python'],       avatar:'NP',color:7},
+];
+const tasks = [
+  {id:1,title:'Redesign onboarding flow',   desc:'Update the new-user onboarding screens per Q4 specs.',     status:'todo',      priority:'high',assignee:2,due:'Oct 20'},
+  {id:2,title:'Fix payment gateway bug',    desc:'Stripe webhook not confirming after 3D Secure.',           status:'todo',      priority:'high',assignee:1,due:'Oct 19'},
+  {id:3,title:'Write API docs',             desc:'Document all v2 endpoints in OpenAPI 3.0 format.',          status:'todo',      priority:'med', assignee:6,due:'Oct 25'},
+  {id:4,title:'Set up staging environment',desc:'Deploy a mirrored staging cluster on AWS.',                 status:'todo',      priority:'low', assignee:7,due:'Oct 28'},
+  {id:5,title:'Dashboard redesign',         desc:"New analytics dashboard based on Priya's Figma mockups.",  status:'inprogress',priority:'high',assignee:3,due:'Oct 22'},
+  {id:6,title:'SEO audit Q4',              desc:'Crawl site, identify gaps, build action plan.',             status:'inprogress',priority:'med', assignee:5,due:'Oct 24'},
+  {id:7,title:'User retention analysis',   desc:'Cohort analysis for Sept signups vs last quarter.',         status:'inprogress',priority:'med', assignee:8,due:'Oct 21'},
+  {id:8,title:'Mobile responsive fixes',   desc:'Address overflow issues on 375px screens in checkout.',    status:'inprogress',priority:'high',assignee:4,due:'Oct 18'},
+  {id:9,title:'API rate limiting',         desc:'Implement per-user rate limiting on public API.',           status:'done',      priority:'high',assignee:1,due:'Oct 15'},
+  {id:10,title:'Team Q3 retrospective',    desc:'Facilitate team retro, compile action items.',              status:'done',      priority:'low', assignee:2,due:'Oct 14'},
+  {id:11,title:'Update privacy policy',    desc:'GDPR update following legal team review.',                  status:'done',      priority:'med', assignee:7,due:'Oct 13'},
+];
+const leaves = [
+  {id:1,empId:5,type:'Annual Leave',  from:'Oct 14',to:'Oct 16',days:3,status:'approved'},
+  {id:2,empId:2,type:'Sick Leave',    from:'Oct 22',to:'Oct 24',days:3,status:'pending'},
+  {id:3,empId:3,type:'Annual Leave',  from:'Nov 03',to:'Nov 07',days:5,status:'pending'},
+  {id:4,empId:6,type:'Annual Leave',  from:'Oct 28',to:'Oct 29',days:2,status:'approved'},
+  {id:5,empId:8,type:'Personal Leave',from:'Nov 10',to:'Nov 10',days:1,status:'pending'},
+  {id:6,empId:1,type:'Annual Leave',  from:'Dec 23',to:'Dec 31',days:7,status:'approved'},
+  {id:7,empId:4,type:'Sick Leave',    from:'Oct 17',to:'Oct 17',days:1,status:'rejected'},
+];
+let leaveFilter='all';
+
+function emp(id){return employees.find(e=>e.id===id);}
+function avatarHtml(e,size=28){return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.floor(size*.35)}px;background:${COLORS[e.color]}">${e.avatar}</div>`;}
+function badgeForStatus(s){
+  if(s==='Active')   return `<span class="badge badge-green">Active</span>`;
+  if(s==='On Leave') return `<span class="badge badge-amber">On Leave</span>`;
+  if(s==='Inactive') return `<span class="badge badge-red">Inactive</span>`;
+  if(s==='pending')  return `<span class="badge badge-amber">Pending</span>`;
+  if(s==='approved') return `<span class="badge badge-green">Approved</span>`;
+  if(s==='rejected') return `<span class="badge badge-red">Rejected</span>`;
+  return s;
+}
+function leaveTypeColor(t){return t==='Sick Leave'?'badge-red':t==='Annual Leave'?'badge-blue':'badge-purple';}
+
+function renderEmployees(){
+  document.getElementById('emp-tbody').innerHTML=employees.map(e=>`
+    <tr><td><div class="emp-cell">${avatarHtml(e,36)}<div><div class="emp-name">${e.name}</div><div class="emp-email">${e.email}</div></div></div></td>
+    <td>${e.dept}</td><td>${e.role}</td><td>${badgeForStatus(e.status)}</td>
+    <td style="color:var(--fg-2);font-size:12px">${e.joined}</td>
+    <td style="font-variant-numeric:tabular-nums;font-weight:600">${e.tasks}</td></tr>`).join('');
+}
+
+function renderProfiles(){
+  const completions=[82,91,74,68,79,88,95,83];
+  const projects=[3,5,2,1,4,3,2,4];
+  document.getElementById('profile-grid').innerHTML=employees.map((e,i)=>`
+    <div class="profile-card">
+      <div class="profile-avatar" style="background:${COLORS[e.color]}">${e.avatar}</div>
+      <div class="profile-name">${e.name}</div>
+      <div class="profile-role">${e.role} · ${e.dept}</div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="profile-stat-val">${e.tasks}</div><div class="profile-stat-label">Tasks</div></div>
+        <div class="profile-stat"><div class="profile-stat-val">${completions[i]}%</div><div class="profile-stat-label">Complete</div></div>
+        <div class="profile-stat"><div class="profile-stat-val">${projects[i]}</div><div class="profile-stat-label">Projects</div></div>
+      </div>
+      <div class="profile-divider"></div>
+      <div class="profile-skills">${e.skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function renderTasks(){
+  const cols={todo:'tasks-todo',inprogress:'tasks-inprogress',done:'tasks-done'};
+  const cnt={todo:0,inprogress:0,done:0};
+  Object.values(cols).forEach(id=>document.getElementById(id).innerHTML='');
+  tasks.forEach(t=>{
+    const e=emp(t.assignee);
+    const pcls=t.priority==='high'?'priority-high':t.priority==='med'?'priority-med':'priority-low';
+    const pIcon=t.priority==='high'?'▲':t.priority==='med'?'●':'▼';
+    const overdue=t.status!=='done'&&['Oct 17','Oct 18','Oct 19'].includes(t.due)?' overdue':'';
+    document.getElementById(cols[t.status]).insertAdjacentHTML('beforeend',`
+      <div class="task-card">
+        <div class="task-priority ${pcls}">${pIcon} ${t.priority==='high'?'High':t.priority==='med'?'Medium':'Low'}</div>
+        <div class="task-title">${t.title}</div>
+        <div class="task-desc">${t.desc}</div>
+        <div class="task-footer">
+          <div class="task-assignee">${avatarHtml(e,20)}<span>${e.name.split(' ')[0]}</span></div>
+          <div class="task-due${overdue}">Due ${t.due}</div>
+        </div>
+      </div>`);
+    cnt[t.status]++;
+  });
+  ['todo','inprogress','done'].forEach(k=>document.getElementById('cnt-'+k).textContent=cnt[k]);
+}
+
+function renderLeaves(filter){
+  const rows=filter==='all'?leaves:leaves.filter(l=>l.status===filter);
+  document.getElementById('leave-tbody').innerHTML=rows.map(l=>{
+    const e=emp(l.empId);
+    const dots=Array(Math.min(l.days,7)).fill(0).map(()=>`<div class="day-dot filled"></div>`).join('');
+    return `<tr>
+      <td><div class="emp-cell">${avatarHtml(e,32)}<div class="emp-name">${e.name}</div></div></td>
+      <td><span class="badge ${leaveTypeColor(l.type)}">${l.type}</span></td>
+      <td style="font-size:13px">${l.from}</td><td style="font-size:13px">${l.to}</td>
+      <td><div class="days-bar">${dots}</div><div style="font-size:11px;color:var(--fg-3);margin-top:3px">${l.days} day${l.days>1?'s':''}</div></td>
+      <td>${badgeForStatus(l.status)}</td>
+      <td>${l.status==='pending'?`<div style="display:flex;gap:6px">
+        <button class="btn-sm" style="background:#DCFCE7;color:#166534" onclick="approveLeave(${l.id})">Approve</button>
+        <button class="btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="rejectLeave(${l.id})">Reject</button>
+        </div>`:`<span style="font-size:12px;color:var(--fg-3)">—</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function approveLeave(id){leaves.find(l=>l.id===id).status='approved';renderLeaves(leaveFilter);}
+function rejectLeave(id){leaves.find(l=>l.id===id).status='rejected';renderLeaves(leaveFilter);}
+function filterLeave(f,btn){
+  leaveFilter=f;
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLeaves(f);
+}
+
+function navigate(view){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${view}`));
+  if(view==='employees')renderEmployees();
+  if(view==='profiles')renderProfiles();
+  if(view==='tasks')renderTasks();
+  if(view==='leaves')renderLeaves(leaveFilter);
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+
+function doLogin(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  renderTasks();
+}
+
+let dark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+function updateThemeUI(){
+  const sw=document.getElementById('theme-sw');
+  document.getElementById('theme-label').textContent=dark?'Light mode':'Dark mode';
+  sw.classList.toggle('on',dark);
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+}
+function toggleTheme(){dark=!dark;updateThemeUI();}
+updateThemeUI();
+</script>
